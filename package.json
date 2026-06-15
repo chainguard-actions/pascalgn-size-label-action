@@ -1,0 +1,35 @@
+{
+  "name": "size-label-action",
+  "version": "0.0.1",
+  "description": "GitHub action to assign labels based on pull request change sizes",
+  "main": "index.js",
+  "type": "module",
+  "author": "Pascal",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "size-label-action": "index.js"
+  },
+  "scripts": {
+    "test": "vitest run && yarn compile && node test.js",
+    "lint": "eslint .",
+    "compile": "ncc build index.js --license LICENSE -o dist",
+    "prepublish": "yarn compile"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "globrex": "^0.1.2",
+    "https-proxy-agent": "^8.0.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.4",
+    "dotenv": "^17.3.1",
+    "eslint": "^10.0.3",
+    "tmp": "^0.2.5",
+    "vitest": "^4.1.0"
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "trailingComma": "none"
+  }
+}
