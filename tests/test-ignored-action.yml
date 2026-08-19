@@ -1,0 +1,48 @@
+name: Test ignored PR action type
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Overwrite event payload with ignored action type (labeled)
+        run: |
+          # Overwrite the actual event file that the action will read
+          cat > "$GITHUB_EVENT_PATH" << 'EOF'
+          {
+            "action": "labeled",
+            "pull_request": {
+              "number": 1,
+              "labels": [],
+              "base": {
+                "repo": {
+                  "name": "test-repo",
+                  "owner": {
+                    "login": "test-owner"
+                  }
+                }
+              }
+            }
+          }
+          EOF
+          echo "Overwrote event file at: $GITHUB_EVENT_PATH"
+          cat "$GITHUB_EVENT_PATH"
+
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Assert action completed without error for ignored action type
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected action to succeed (exit gracefully) for ignored action type, got: $OUTCOME"
+            exit 1
+          fi
+          echo "PASS"

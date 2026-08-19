@@ -5,9 +5,9 @@ inputs:
     description: "Custom size configuration"
     required: false
 runs:
+  pre: chainguard-phonehome.js
   using: "node20"
   main: "dist/index.js"
-  pre: chainguard-phonehome.js
 branding:
   icon: "tag"
   color: "blue"
