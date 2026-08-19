@@ -1,32 +1,47 @@
-name: Test custom sizes input
+name: Test custom sizes input with ignored action
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_EVENT_NAME: pull_request
-      GITHUB_REF: refs/pull/1/merge
-      GITHUB_HEAD_REF: feature-branch
-      GITHUB_BASE_REF: main
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Overwrite event payload with closed action type
+        run: |
+          cat > "$GITHUB_EVENT_PATH" << 'EOF'
+          {
+            "action": "closed",
+            "pull_request": {
+              "number": 42,
+              "labels": [],
+              "base": {
+                "repo": {
+                  "owner": {
+                    "login": "test-owner"
+                  },
+                  "name": "test-repo"
+                }
+              }
+            }
+          }
+          EOF
+
       - id: action
         uses: .
-        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           sizes: |
             {
               "0": "XS",
-              "10": "S",
-              "30": "M",
-              "100": "L",
-              "500": "XL",
-              "1000": "XXL"
+              "5": "S",
+              "20": "M",
+              "50": "L",
+              "200": "XL",
+              "500": "XXL"
             }
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Assert action ran with custom sizes input
+
+      - name: Assert action completed without error with custom sizes
         run: |
-          echo "Action completed with custom sizes input (may fail due to no real PR context, which is expected)"
-          echo "PASS"
+          echo "PASS: action completed successfully with custom sizes for ignored action type"
