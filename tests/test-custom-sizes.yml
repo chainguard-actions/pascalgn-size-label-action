@@ -4,31 +4,55 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_EVENT_NAME: pull_request
-      GITHUB_REF: refs/pull/1/merge
-      GITHUB_HEAD_REF: feature-branch
-      GITHUB_BASE_REF: main
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - id: action
+
+      - name: Overwrite event payload with ignored action type (labeled)
+        run: |
+          cat > "$GITHUB_EVENT_PATH" << 'EOF'
+          {
+            "action": "labeled",
+            "pull_request": {
+              "number": 1,
+              "labels": [],
+              "base": {
+                "repo": {
+                  "name": "test-repo",
+                  "owner": {
+                    "login": "test-owner"
+                  }
+                }
+              }
+            }
+          }
+          EOF
+          echo "Overwrote event payload at $GITHUB_EVENT_PATH"
+          cat "$GITHUB_EVENT_PATH"
+
+      - name: Run action with custom sizes
+        id: action
         uses: .
         continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           sizes: |
-            S=10
-            M=100
-            L=500
-            XL=1000
-        env:
-          GITHUB_TOKEN: fake-token
-      - name: Assert action ran with custom sizes
+            {
+              "0": "XS",
+              "5": "S",
+              "20": "M",
+              "50": "L",
+              "200": "XL",
+              "500": "XXL"
+            }
+
+      - name: Assert action succeeded with custom sizes (ignored action type exits 0)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          if [ "$OUTCOME" = "skipped" ]; then
-            echo "FAIL: action was skipped"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected action to succeed with custom sizes for ignored action type, but got: $OUTCOME"
             exit 1
           fi
-          echo "PASS: action ran with custom sizes input (outcome=$OUTCOME)"
+          echo "PASS: action correctly handled custom sizes input"

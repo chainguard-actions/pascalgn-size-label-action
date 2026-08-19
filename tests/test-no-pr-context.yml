@@ -1,0 +1,36 @@
+name: Test no PR context
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Overwrite event payload without pull_request data
+        run: |
+          cat > "$GITHUB_EVENT_PATH" << 'EOF'
+          {
+            "action": "opened"
+          }
+          EOF
+          echo "Overwrote event payload at $GITHUB_EVENT_PATH"
+          cat "$GITHUB_EVENT_PATH"
+
+      - name: Run action (expect failure - no PR context)
+        id: action
+        uses: .
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Assert action failed with expected error
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail when not in a PR context, but got outcome: $OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action correctly failed when not in a PR context"
